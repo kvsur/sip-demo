@@ -3,21 +3,32 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "serve": "vue-cli-service serve",
+    "start": "vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "bootstrap": "^4.5.0",
+    "bootstrap-vue": "^2.16.0",
     "core-js": "^3.6.5",
-    "vue": "^2.6.11"
+    "jssip": "^3.5.3",
+    "less": "^3.12.2",
+    "sip.js": "^0.17.0",
+    "vue": "^2.6.11",
+    "vue-class-component": "^7.2.5",
+    "vue-property-decorator": "^9.0.0",
+    "webrtc-adapter": "^7.6.4"
   },
   "devDependencies": {
+    "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/plugin-proposal-decorators": "^7.10.5",
     "@vue/cli-plugin-babel": "~4.4.0",
     "@vue/cli-plugin-eslint": "~4.4.0",
     "@vue/cli-service": "~4.4.0",
     "babel-eslint": "^10.1.0",
     "eslint": "^6.7.2",
     "eslint-plugin-vue": "^6.2.2",
+    "less-loader": "^6.2.0",
     "vue-template-compiler": "^2.6.11"
   },
   "eslintConfig": {
