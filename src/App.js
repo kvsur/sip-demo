@@ -2,15 +2,11 @@ import { Vue, Component } from 'vue-property-decorator';
 
 // import HelloWorld from './components/HelloWorld.vue';
 import SipDemo from './components/SipDemo.js';
-import logo from './assets/logo.png';
+import logo from './assets/logo.jpg';
 
 import './index.less';
 
-@Component({
-  components: {
-    SipDemo
-  }
-})
+@Component
 class App extends Vue {
   render(h) {
     return (

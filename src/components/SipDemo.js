@@ -1,46 +1,65 @@
 import { Vue, Component, Ref } from 'vue-property-decorator';
 
-import { BButton, BModal } from 'bootstrap-vue';
-import { Web, URI } from 'sip.js'
-
-const { SimpleUser } = Web;
+import { BButton, BFormInput } from 'bootstrap-vue';
+import { Web, URI } from 'sip.js';
 
 import './SipDemo.less';
 
-// const uri = new URI('sip:3933@www.onmymemory.com:9070');
-const uri = new URI('sip', '3933','www.onmymemory.com',9070);
+import SIP_CONFIG from '../sip_config/config.js';
 
-@Component({
-  components: { BButton, BModal }
-})
+import Elli from './Ellipsis.js';
+
+const { USER_AGENT, SIP_CONNECT_DOMAIN, SIP_CONNECT_PORT, SIP_WS_DOMAIN, SIP_WS_PORT, SIP_WS_PROTOCOL } = SIP_CONFIG;
+
+const { SimpleUser } = Web;
+
+const uri = new URI('sip', USER_AGENT, SIP_CONNECT_DOMAIN, SIP_CONNECT_PORT);
+
+@Component
 class SipDemo extends Vue {
 
-  userAgent = null;
-  userSession = null;
-  registerer = null;
+  userAgent = null; // sipClient
+  registed = false; // 用户是否已经注册成功
+  connected = false; // sip是否已经连接
+  incoming = false; // 当前是否有新的来电
+  calling = false; // 是否正在通话中
+  number = ''; // number for call
+  callingUser = false; // 正在呼叫中
 
-  @Ref('remoteAudio') remoteAudio;
+  @Ref('remoteAudio') audio;
+
+  mounted() {
+    this.buildConnect();
+  }
 
   async initAgent() {
-    console.log(1);
-    const userAgent = new SimpleUser('wss://www.onmymemory.com:7443', {
+    const userAgent = new SimpleUser(`${SIP_WS_PROTOCOL}://${SIP_WS_DOMAIN}:${SIP_WS_PORT}`, {
       aor: uri,
       delegate: {
         onCallAnswered: (res) => {
-          console.warn('onCallAnswered', res);
-          console.log(userAgent.remoteMediaStream)
+          console.warn('callAnswered...');
+          this.callingUser = false;
+          this.calling = true;
+          this.incoming = false;
         },
         onCallReceived: (res) => {
-          console.warn('onCallReceived', res)
+          console.warn('callReceived...', res);
+          this.incoming = true;
+        },
+        onCallHangup: () => {
+          this.calling = false;
+          this.callingUser = false;
+          this.incoming = false;
+          console.warn('callHangup...');
         },
         onCallCreated: (res) => {
-          console.warn('onCallCreated', res)
+          console.warn('callCreated...', res);
         },
         onRegistered: (res) => {
-          console.warn('onRegistered', res)
+          console.warn('userRegisted...', res)
         },
         onServerConnect: (res) => {
-          console.warn('onServerConnect', res)
+          console.warn('serverConnected...', res)
         },
       },
       media: {
@@ -49,28 +68,29 @@ class SipDemo extends Vue {
           vedio: false,
         },
         remote: {
-          audio: this.remoteAudio
+          audio: this.audio
         }
       },
       userAgentOptions: {
-        authorizationUsername: '3933',
-        authorizationPassword: '3933',
+        authorizationUsername: USER_AGENT,
+        authorizationPassword: USER_AGENT,
         uri,
         transportOptions: {
-          server: 'wss://www.onmymemory.com:7443'
+          server: `${SIP_WS_PROTOCOL}://${SIP_WS_DOMAIN}:${SIP_WS_PORT}`
         }
       }
     });
 
-    userAgent.connect().then(mes => {
-      console.warn('connected...', mes, userAgent);
+    try {
+      await userAgent.connect();
+      this.connected = true;
+      await userAgent.register();
+      this.registed = true;
+    } catch (e) {
+      console.error('connecting or registing failed...');
+    } finally {
       this.userAgent = userAgent;
-
-      userAgent.register().then(res => {
-        console.warn('registed.......', res);
-        
-      })
-    })
+    }
 
     return Promise.resolve();
   }
@@ -79,24 +99,13 @@ class SipDemo extends Vue {
     await this.initAgent();
   }
   async call() {
-    this.userAgent.call('sip:7777@www.onmymemory.com:9070').then(res => {
-      console.warn('call success.......', res);
-
-      // const ms = new MediaStream();
-      // this.userAgent.session._sessionDescriptionHandler._peerConnection.getReceivers().forEach(rcv => {
-      //   ms.addTrack(rcv.track)
-      // });
-
-      // this.remoteAudio.srcObject = ms;
-      // // this.remoteAudio.volume = 1;
-
-
-      // this.remoteAudio.play();
-      // console.log(this.userAgent.isMuted())
-      // this.userAgent.unmute();
-    }).catch(err => {
-      console.error('call faild.......', err)
-    })
+    const { number } = this;
+    try {
+      this.callingUser = true;
+      await this.userAgent.call(`sip:${number}@${SIP_CONNECT_DOMAIN}:${SIP_CONNECT_PORT}`);
+    } catch (e) {
+     console.error('call failed...'); 
+    }
   }
   hangup() {
     this.userAgent.hangup();
@@ -107,18 +116,40 @@ class SipDemo extends Vue {
   unhold() {
     this.userAgent.unhold();
   }
-  render(h) {
+  numberInput(v) {
+    this.number = v;
+  }
+  answer() {
+    this.userAgent.answer();
+  }
+  render() {
+    const { connected, registed, calling, incoming, number, callingUser } = this;
     return (
       <div class="sip-demo-component-container">
+        <div>sip {!connected ? '未连接' : '已连接'}</div>
+        <div>{USER_AGENT} {!registed ? '未注册' : '已注册'}</div>
+        {calling ? <div>正在通话中<Elli /><BButton variant='danger' size='sm' style={{width: '60px'}} onClick={this.hangup}>挂断</BButton></div>
+          : null}
+        {
+          (callingUser || calling || incoming) ? null : (
+            <div>
+              <div>暂无通话</div>
+              <div style={{display: 'flex'}}>
+                <BFormInput value={number} onInput={this.numberInput} size='sm'/>
+                <BButton size='sm' style={{width: '60px'}} onClick={this.call} disabled={!number}>呼叫</BButton>
+              </div>
+            </div>
+          )
+        }
+        { incoming ? <div>
+          <span>来电提示中<Elli /></span><BButton variant='success' size='sm' onClick={this.answer}>接听</BButton>
+        </div> : null}
+        {
+          callingUser ? <div>正在拨号中<Elli /></div> : null
+        }
+        {
 
-        <BButton variant="primary" size="sm" onClick={this.buildConnect}>建立连接</BButton>
-        <BButton variant="primary" size="sm" onClick={this.call}>开始通话</BButton>
-        <BButton variant="primary" size="sm" onClick={this.hangup}>挂断</BButton>
-        <BButton variant="primary" size="sm" onClick={this.hold}>挂起</BButton>
-        <BButton variant="primary" size="sm" onClick={this.unhold}>恢复</BButton>
-        {/* <BModal id="sip-demo-bv-modal">
-          <div>hello world</div>
-        </BModal> */}
+        }
         <audio ref="remoteAudio" class="hide-audio" controls src="" />
       </div>
     );
