@@ -56,10 +56,15 @@ class SipDemo extends Vue {
           console.warn('callCreated...', res);
         },
         onRegistered: (res) => {
-          console.warn('userRegisted...', res)
+          console.warn('userRegisted...', res);
+          this.registed = true;
         },
         onServerConnect: (res) => {
           console.warn('serverConnected...', res)
+          this.connected = true;
+          setTimeout(() => {
+            this.userAgent.register();
+          }, 1000);
         },
       },
       media: {
@@ -73,7 +78,7 @@ class SipDemo extends Vue {
       },
       userAgentOptions: {
         authorizationUsername: USER_AGENT,
-        authorizationPassword: USER_AGENT,
+        authorizationPassword: '1234',
         uri,
         transportOptions: {
           server: `${SIP_WS_PROTOCOL}://${SIP_WS_DOMAIN}:${SIP_WS_PORT}`
@@ -82,14 +87,10 @@ class SipDemo extends Vue {
     });
 
     try {
+      this.userAgent = userAgent;
       await userAgent.connect();
-      this.connected = true;
-      await userAgent.register();
-      this.registed = true;
     } catch (e) {
       console.error('connecting or registing failed...');
-    } finally {
-      this.userAgent = userAgent;
     }
 
     return Promise.resolve();
