@@ -11,11 +11,6 @@ import Elli from './Ellipsis.js';
 
 import { Audio2Wave } from 'audio2wave';
 
-const getData = () => {
-  window.analyser.getByteFrequencyData(window.u8);
-  console.log(window.u8)
-}
-
 const { USER_AGENT, SIP_CONNECT_DOMAIN, SIP_CONNECT_PORT, SIP_WS_DOMAIN, SIP_WS_PORT, SIP_WS_PROTOCOL } = SIP_CONFIG;
 
 const { SimpleUser } = Web;
@@ -40,49 +35,38 @@ class SipDemo extends Vue {
 
   mounted() {
     this.buildConnect();
-    // this.audio2wave = new Audio2Wave({
-    //   audio: this.audio,
-    //   container: this.audio2wavetest,
-    //   drawerConfig: {
-    //     canvasWH: {
-    //       width: 500,
-    //       height: 80
-    //     }
-    //   }
-    // });
-    window.audioContext = new AudioContext();
-    window.analyser = window.audioContext.createAnalyser();
-    window.analyser.fftSize = 512;
-    window.scriptProcessor = window.audioContext.createScriptProcessor(4096, 2, 2);
-    window.u8 = new Uint8Array(window.analyser.frequencyBinCount);
+    
   }
 
   async initAgent() {
     const userAgent = new SimpleUser(`${SIP_WS_PROTOCOL}://${SIP_WS_DOMAIN}:${SIP_WS_PORT}`, {
       aor: uri,
       delegate: {
-        onCallAnswered: (mediaSream) => {
-          window.audioSource = window.audioContext.createMediaStreamSource(mediaSream);
-
-          window.audioSource.connect(window.analyser);
-          window.analyser.connect(window.audioContext.destination);
-          // window.scriptProcessor.connect(window.audioContext.destination);
-          window.audioContext.resume();
+        onCallAnswered: (res) => {
           console.warn('callAnswered...');
+          this.audio2wave = new Audio2Wave({
+            audio: res,
+            container: this.audio2wavetest,
+            drawerConfig: {
+              canvasWH: {
+                width: 200,
+                height: 80
+              }
+            }
+          })
+          queueMicrotask(() => {
+            this.audio2wave.start();
+          })
           this.callingUser = false;
           this.calling = true;
           this.incoming = false;
-          // debugger;
-          // this.analyser.getByteFrequencyData(this.u8);
-          getData();
-      console.log(this.u8)
         },
         onCallReceived: (res) => {
           console.warn('callReceived...', res);
           this.incoming = true;
         },
         onCallHangup: () => {
-          cancelAnimationFrame(this.frameId);
+          this.audio2wave.destroy();
           this.calling = false;
           this.callingUser = false;
           this.incoming = false;
@@ -185,7 +169,7 @@ class SipDemo extends Vue {
           callingUser ? <div>正在拨号中<Elli /></div> : null
         }
         {
-          <BButton onClick={_ => {getData()}}>getData</BButton>
+
         }
         <audio ref="remoteAudio" class="hide-audio" controls src="" />
         <div ref="audio2wavetest" style="height: 80px; width: 500px"/>
