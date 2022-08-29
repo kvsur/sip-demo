@@ -1,7 +1,7 @@
 import { Vue, Component, Ref } from 'vue-property-decorator';
 
 import { BButton, BFormInput } from 'bootstrap-vue';
-import { Web, URI } from 'sip.js';
+import { Web, URI, UserAgent, SIPExtension } from 'sip.js';
 
 import './SipDemo.less';
 
@@ -11,7 +11,7 @@ import Elli from './Ellipsis.js';
 
 import { Audio2Wave } from 'audio2wave';
 
-const { USER_AGENT, SIP_CONNECT_DOMAIN, SIP_CONNECT_PORT, SIP_WS_DOMAIN, SIP_WS_PORT, SIP_WS_PROTOCOL } = SIP_CONFIG;
+const { USER_PASSWORD, USER_AGENT, SIP_CONNECT_DOMAIN, SIP_CONNECT_PORT, SIP_WS_DOMAIN, SIP_WS_PORT, SIP_WS_PROTOCOL } = SIP_CONFIG;
 
 const { SimpleUser } = Web;
 
@@ -20,6 +20,7 @@ const uri = new URI('sip', USER_AGENT, SIP_CONNECT_DOMAIN, SIP_CONNECT_PORT);
 @Component
 class SipDemo extends Vue {
 
+  /** @type { import('sip.js/lib/platform/web').SimpleUser } */
   userAgent = null; // sipClient
   registed = false; // 用户是否已经注册成功
   connected = false; // sip是否已经连接
@@ -28,9 +29,10 @@ class SipDemo extends Vue {
   number = ''; // number for call
   callingUser = false; // 正在呼叫中
 
-  audio2wave = null;
+  // audio2wave = null;
 
   @Ref('remoteAudio') audio;
+  @Ref('localAudio') localAudio;
   @Ref('audio2wavetest') audio2wavetest;
 
   mounted() {
@@ -44,18 +46,18 @@ class SipDemo extends Vue {
       delegate: {
         onCallAnswered: (res) => {
           console.warn('callAnswered...');
-          this.audio2wave = new Audio2Wave({
-            audio: res,
-            container: this.audio2wavetest,
-            drawerConfig: {
-              canvasWH: {
-                width: 200,
-                height: 80
-              }
-            }
-          })
+          // this.audio2wave = new Audio2Wave({
+          //   audio: res,
+          //   container: this.audio2wavetest,
+          //   drawerConfig: {
+          //     canvasWH: {
+          //       width: 200,
+          //       height: 80
+          //     }
+          //   }
+          // });
           queueMicrotask(() => {
-            this.audio2wave.start();
+            // this.audio2wave.start();
           })
           this.callingUser = false;
           this.calling = true;
@@ -66,7 +68,7 @@ class SipDemo extends Vue {
           this.incoming = true;
         },
         onCallHangup: () => {
-          this.audio2wave.destroy();
+          // this.audio2wave.destroy();
           this.calling = false;
           this.callingUser = false;
           this.incoming = false;
@@ -94,12 +96,16 @@ class SipDemo extends Vue {
         },
         remote: {
           audio: this.audio
+        },
+        local: {
+          audio: this.localAudio
         }
       },
       userAgentOptions: {
         authorizationUsername: USER_AGENT,
-        authorizationPassword: '1234',
+        authorizationPassword: USER_PASSWORD || USER_AGENT,
         uri,
+        sipExtension100rel: SIPExtension.Required,
         transportOptions: {
           server: `${SIP_WS_PROTOCOL}://${SIP_WS_DOMAIN}:${SIP_WS_PORT}`
         }
@@ -123,7 +129,15 @@ class SipDemo extends Vue {
     const { number } = this;
     try {
       this.callingUser = true;
-      await this.userAgent.call(`sip:${number}@${SIP_CONNECT_DOMAIN}:${SIP_CONNECT_PORT}`);
+      await this.userAgent.call(`sip:${number}@${SIP_CONNECT_DOMAIN}:${SIP_CONNECT_PORT}`, {
+        earlyMedia: true,
+        // inviteWithoutSdp: true
+        delegate: {
+          onSessionDescriptionHandler: (sdh) => {
+            debugger;
+          }
+        }
+      });
     } catch (e) {
      console.error('call failed...'); 
     }
@@ -172,7 +186,8 @@ class SipDemo extends Vue {
 
         }
         <audio ref="remoteAudio" class="hide-audio" controls src="" />
-        <div ref="audio2wavetest" style="height: 80px; width: 500px"/>
+        <audio ref="localAudio" class="hide-audio" controls src="" />
+        {/* <div ref="audio2wavetest" style="height: 80px; width: 500px"/> */}
       </div>
     );
   }
