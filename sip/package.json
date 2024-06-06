@@ -1,0 +1,10 @@
+{
+  "name": "sip-sdk",
+  "version": "1.0.0",
+  "description": "",
+  "main": "sip-sdk.js",
+  "types": "sip-sdk.d.ts",
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
