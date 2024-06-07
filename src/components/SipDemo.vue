@@ -67,21 +67,7 @@ onMounted(() => {
   });
 
   sipClient.value = client;
-
-  setTimeout(() => {
-    debugger;
-    client.register(
-      {
-        onAccept: () => {
-          message.success('分机注册成功');
-          registered.value = true;
-        },
-        onReject: () => {
-          message.error('分机注册失败');
-        },
-      }
-    );
-  }, 1000);
+  client.connect();
 });
 function call() {
   // 。。。 其实这里应该有一个前置的步骤是获取真实号码，需要调用平台的接口，后续自行处理
