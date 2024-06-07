@@ -20,8 +20,8 @@ onMounted(() => {
   // 这里需要前置坐下获取系统麦克风权限的逻辑，不然sip软电话无法使用，自行处理
   const client = new SipClient({
     remoteAudio: new Audio(), // 也可以是 通过 document.querySelector 或者 getElementById 查询的 audio dom节点
-    userAuthNumber: '12345', // 需要找平台查询获取
-    userAuthPassword: '12345', // 需要找平台查询获取
+    userAuthNumber: '3088', // 需要找平台查询获取
+    userAuthPassword: 'gp51l8vtz', // 需要找平台查询获取
     iceGatheringTimeout: 1000,
     delegate: {
       onServerConnect: () => {
@@ -58,8 +58,8 @@ onMounted(() => {
       },
     },
     sipConfig: {
-        host: '10.0.33.19',
-        port: 5060,
+        host: '10.10.0.124',
+        port: 5080,
     },
     wsConfig: {
         path: 'wss://znkfdemo.wewecall.com:20080/cc_ws_path',
@@ -84,6 +84,13 @@ function hangup() {
   sipClient.value.hangup();
 }
 
+/**
+ * @param { Event & { target: { value: string }} } e 
+ */
+function numberInputHandle(e) {
+  callNumber.value = e.target.value;
+}
+
 const rightMessage = currentStatus.value === 'ringing' ? '振铃中。。。' : (currentStatus.value === 'calling' ? '正在通话' : '等待通话。。。');
 </script>
 <template>
@@ -91,7 +98,7 @@ const rightMessage = currentStatus.value === 'ringing' ? '振铃中。。。' : 
     <Row>
       <Col :span="12">
         <Alert type="warning" :message="'分机号注册状态:' + (registered ? '已注册' : '未注册')" />
-        <Input v-model="callNumber" :placeholder="'输入需要呼叫📞的号码'" :disabled="!registered" />
+        <Input :value="callNumber" @change="numberInputHandle" :placeholder="'输入需要呼叫📞的号码'" :disabled="!registered" />
         <Button type="primary" :disabled="!registered || currentStatus !== 'waiting_call'" @click="call()">呼叫</Button>
       </Col>
       <Col>
