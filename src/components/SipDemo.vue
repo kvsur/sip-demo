@@ -71,7 +71,15 @@ onMounted(() => {
 });
 function call() {
   // 。。。 其实这里应该有一个前置的步骤是获取真实号码，需要调用平台的接口，后续自行处理
-  sipClient.value.call(callNumber.value);
+  sipClient.value.call(callNumber.value, {
+    onAccept: () => {
+      message.success('呼叫成功，请注意接听');
+    },
+    onReject: (res) => {
+      message.error('呼叫失败，请稍后再次尝试');
+      console.error(res);
+    },
+  });
   callDirection.value = 'callout';
   // currentStatus.value = 'ringing';
 }
