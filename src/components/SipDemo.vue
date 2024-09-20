@@ -70,6 +70,10 @@ onMounted(() => {
   client.connect();
 });
 function call() {
+  if (!callNumber.value) {
+    message.error('输入正确可呼叫的号码以呼叫📞');
+    return;
+  }
   // 。。。 其实这里应该有一个前置的步骤是获取真实号码，需要调用平台的接口，后续自行处理
   sipClient.value.call(callNumber.value, {
     onAccept: () => {
@@ -102,7 +106,7 @@ function numberInputHandle(e) {
 const rightMessage = currentStatus.value === 'ringing' ? '振铃中。。。' : (currentStatus.value === 'calling' ? '正在通话' : '等待通话。。。');
 </script>
 <template>
-  <Card>
+  <Card class="bg-transparent">
     <Row>
       <Col :span="12">
         <Alert type="warning" :message="'分机号注册状态:' + (registered ? '已注册' : '未注册')" />
